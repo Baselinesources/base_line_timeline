@@ -1,0 +1,8 @@
+.photo_cache/
+assets/
+data/
+scripts/
+output/
+.claude/
+README.md
+.DS_Store
