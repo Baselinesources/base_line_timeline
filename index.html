@@ -403,6 +403,8 @@
     padding:0 2px;
   }
   .zoom-level:hover{ color:var(--accent); }
+  .zoom-divider{ width:1px; height:16px; background:var(--rule-strong); margin:0 3px; }
+  #sortDir.active{ color:var(--accent); }
 
   #timelineInner{ transform-origin:0 0; }
 
@@ -450,7 +452,9 @@
   </div>
 </div>
 
-<div class="zoom-controls" role="group" aria-label="Timeline zoom">
+<div class="zoom-controls" role="group" aria-label="Timeline controls">
+  <button id="sortDir" type="button" aria-label="Show newest first" title="Show newest first">&#8646;</button>
+  <span class="zoom-divider"></span>
   <button id="zoomOut" type="button" aria-label="Zoom out" title="Zoom out">&#8722;</button>
   <span class="zoom-level" id="zoomLevel" role="button" tabindex="0" title="Reset zoom" aria-label="Reset zoom to 100%">100%</span>
   <button id="zoomIn" type="button" aria-label="Zoom in" title="Zoom in">&#43;</button>
@@ -507,8 +511,12 @@ const CIRCLE_SIZE = 56;
 const MIN_GAP = CIRCLE_SIZE + 14;
 const SLOT_SPACING = CIRCLE_SIZE + 16;
 
-function yearToX(year){ return (year - MIN_YEAR) * PX_PER_YEAR; }
-const totalWidth = yearToX(MAX_YEAR);
+let REVERSED = false;
+const totalWidth = (MAX_YEAR - MIN_YEAR) * PX_PER_YEAR;
+function yearToX(year){
+  const t = (year - MIN_YEAR) * PX_PER_YEAR;
+  return REVERSED ? (totalWidth - t) : t;
+}
 
 document.getElementById('stat-count').textContent = SHOES.length;
 document.getElementById('stat-lanes').textContent = LANE_ORDER.length;
@@ -540,18 +548,23 @@ function assignSlot(x, lastXInSlot, minGap){
 
 // ---- Ruler (top only, light touch) ----
 ruler.style.width = totalWidth + 'px';
-for(let y = 1920; y <= MAX_YEAR; y += 5){
-  const tick = document.createElement('div');
-  tick.className = 'ruler-tick' + (y % 10 === 0 ? ' decade' : '');
-  tick.style.left = yearToX(y) + 'px';
-  if(y % 10 === 0){
-    const label = document.createElement('span');
-    label.className = 'yr-label';
-    label.textContent = y;
-    tick.appendChild(label);
+
+function renderTimeline(){
+  ruler.innerHTML = '';
+  lanesEl.innerHTML = '';
+
+  for(let y = 1920; y <= MAX_YEAR; y += 5){
+    const tick = document.createElement('div');
+    tick.className = 'ruler-tick' + (y % 10 === 0 ? ' decade' : '');
+    tick.style.left = yearToX(y) + 'px';
+    if(y % 10 === 0){
+      const label = document.createElement('span');
+      label.className = 'yr-label';
+      label.textContent = y;
+      tick.appendChild(label);
+    }
+    ruler.appendChild(tick);
   }
-  ruler.appendChild(tick);
-}
 
 LANE_ORDER.forEach((laneKey, laneIndex) => {
   const shoes = byLane[laneKey].slice().sort((a,b) => parseInt(a.year) - parseInt(b.year));
@@ -565,7 +578,10 @@ LANE_ORDER.forEach((laneKey, laneIndex) => {
   if(hasPhotos){
     const lastXInSlot = {};
     let maxAbsSlot = 0;
-    placements = withX.map(item => {
+    // gap-collision logic below assumes items arrive in x-ascending order,
+    // which withX only guarantees when yearToX is monotonic increasing (i.e. not REVERSED)
+    const byXAsc = withX.slice().sort((a, b) => a.x - b.x);
+    placements = byXAsc.map(item => {
       const slot = assignSlot(item.x, lastXInSlot, MIN_GAP);
       lastXInSlot[slot] = item.x;
       maxAbsSlot = Math.max(maxAbsSlot, Math.abs(slot));
@@ -618,8 +634,11 @@ LANE_ORDER.forEach((laneKey, laneIndex) => {
   svg.style.overflow = 'visible';
 
   if(shoes.length){
-    const minX = Math.max(0, yearToX(parseInt(shoes[0].year)) - 26);
-    const maxX = yearToX(parseInt(shoes[shoes.length-1].year)) + 26;
+    // shoes[] is always year-ascending, but x-ascending only when not REVERSED --
+    // derive min/max from the actual x values so the ribbon/badge stay correct either way
+    const xs = withX.map(w => w.x);
+    const minX = Math.max(0, Math.min.apply(null, xs) - 26);
+    const maxX = Math.max.apply(null, xs) + 26;
 
     // straight ribbon path
     const d = 'M' + minX.toFixed(1) + ',' + centerY + ' L' + maxX.toFixed(1) + ',' + centerY + ' ';
@@ -792,7 +811,10 @@ LANE_ORDER.forEach((laneKey, laneIndex) => {
   svgWrap.appendChild(markerLayer);
   row.appendChild(svgWrap);
   lanesEl.appendChild(row);
-});
+  });
+}
+
+renderTimeline();
 
 // ---- Size the timeline pane to fill the viewport ----
 // Keeps the horizontal scrollbar pinned to the bottom of the screen at all times,
@@ -819,6 +841,21 @@ LANE_ORDER.forEach((laneKey, laneIndex) => {
   const btnIn = document.getElementById('zoomIn');
   const btnOut = document.getElementById('zoomOut');
   const lvl = document.getElementById('zoomLevel');
+  const sortBtn = document.getElementById('sortDir');
+
+  function updateSortLabel(){
+    const label = REVERSED ? 'Show oldest first' : 'Show newest first';
+    sortBtn.title = label;
+    sortBtn.setAttribute('aria-label', label);
+    sortBtn.classList.toggle('active', REVERSED);
+  }
+  sortBtn.addEventListener('click', () => {
+    REVERSED = !REVERSED;
+    renderTimeline();
+    outer.scrollLeft = 0;
+    updateSortLabel();
+  });
+  updateSortLabel();
 
   const ZMIN = 0.16, ZMAX = 1.6, STEP = 1.2;
   let zoom = 1;
