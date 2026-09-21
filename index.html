@@ -74,7 +74,9 @@
   }
   .header-stats b{color:var(--chalk);font-weight:600;}
 
-  .theme-toggle{
+  .header-actions{ display:flex; align-items:center; gap:10px; flex:none; }
+
+  .icon-btn{
     width:34px; height:34px;
     border-radius:50%;
     border:1px solid var(--rule);
@@ -85,10 +87,47 @@
     flex:none;
     transition:border-color .2s ease, color .2s ease;
   }
-  .theme-toggle:hover{ border-color:var(--accent); color:var(--accent); }
+  .icon-btn:hover, .icon-btn.active{ border-color:var(--accent); color:var(--accent); }
   #iconMoon{ display:none; }
   html[data-theme="dark"] #iconSun{ display:none; }
   html[data-theme="dark"] #iconMoon{ display:block; }
+
+  .search-wrap{ position:relative; }
+  .search-panel{
+    display:none;
+    position:absolute; top:44px; right:0; z-index:50;
+    width:340px; max-width:calc(100vw - 32px);
+    background:var(--court-panel);
+    border:1px solid var(--rule-strong);
+    border-radius:10px;
+    box-shadow:0 12px 32px rgba(28,31,36,.22);
+    padding:10px;
+  }
+  .search-panel.open{ display:block; }
+  .search-input{
+    width:100%; box-sizing:border-box;
+    padding:9px 10px;
+    border-radius:6px;
+    border:1px solid var(--rule-strong);
+    background:var(--court);
+    color:var(--chalk);
+    font-family:'Inter',sans-serif; font-size:13px;
+    outline:none;
+  }
+  .search-input:focus{ border-color:var(--accent); }
+  .search-results{ margin-top:8px; max-height:340px; overflow-y:auto; }
+  .search-result{
+    display:flex; flex-direction:column; align-items:flex-start; gap:2px;
+    width:100%; box-sizing:border-box; text-align:left;
+    padding:8px 10px; border-radius:6px;
+    border:none; background:transparent; cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .search-result:hover, .search-result.hi{ background:var(--court); }
+  .search-result b{ font-size:13px; color:var(--chalk); font-weight:600; }
+  .search-result span{ font-size:11px; color:var(--chalk-dim); font-family:'IBM Plex Mono',monospace; }
+  .search-empty{ padding:10px; margin:0; font-size:12.5px; color:var(--chalk-dim); text-align:center; }
+  .search-hint{ margin:8px 2px 0; font-size:10.5px; color:var(--chalk-dim); font-family:'IBM Plex Mono',monospace; }
 
   .scroll-hint{
     font-family:'IBM Plex Mono',monospace;
@@ -419,6 +458,7 @@
     .zoom-controls{right:8px;bottom:8px;}
     .scroll-outer::-webkit-scrollbar{height:8px;width:8px;}
     footer{padding:8px 18px 14px;}
+    .search-panel{ position:fixed; top:64px; left:12px; right:12px; width:auto; max-width:none; }
   }
   @media (prefers-reduced-motion:reduce){ *{transition:none !important; animation:none !important;} }
 
@@ -436,10 +476,22 @@
     <span class="wordmark">Base <span>Line</span></span>
     <span class="header-stats"><b id="stat-count">535</b> shoes &nbsp;·&nbsp; <b id="stat-lanes">18</b> brands &nbsp;·&nbsp; <b>1917–2026</b></span>
   </div>
-  <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">
-    <svg id="iconSun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"></circle><line x1="12" y1="1.5" x2="12" y2="4"></line><line x1="12" y1="20" x2="12" y2="22.5"></line><line x1="4.2" y1="4.2" x2="5.9" y2="5.9"></line><line x1="18.1" y1="18.1" x2="19.8" y2="19.8"></line><line x1="1.5" y1="12" x2="4" y2="12"></line><line x1="20" y1="12" x2="22.5" y2="12"></line><line x1="4.2" y1="19.8" x2="5.9" y2="18.1"></line><line x1="18.1" y1="5.9" x2="19.8" y2="4.2"></line></svg>
-    <svg id="iconMoon" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M20.6 15.3A9 9 0 1 1 8.7 3.4a7 7 0 0 0 11.9 11.9z"></path></svg>
-  </button>
+  <div class="header-actions">
+    <div class="search-wrap">
+      <button class="icon-btn" id="searchToggle" aria-label="Search shoes" title="Search shoes (&#8984;K)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      </button>
+      <div class="search-panel" id="searchPanel">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search shoes, brands, players&#8230;" autocomplete="off">
+        <div class="search-results" id="searchResults"></div>
+        <p class="search-hint">Search covers curiosities and moment captions too &mdash; try a player's name</p>
+      </div>
+    </div>
+    <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+      <svg id="iconSun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"></circle><line x1="12" y1="1.5" x2="12" y2="4"></line><line x1="12" y1="20" x2="12" y2="22.5"></line><line x1="4.2" y1="4.2" x2="5.9" y2="5.9"></line><line x1="18.1" y1="18.1" x2="19.8" y2="19.8"></line><line x1="1.5" y1="12" x2="4" y2="12"></line><line x1="20" y1="12" x2="22.5" y2="12"></line><line x1="4.2" y1="19.8" x2="5.9" y2="18.1"></line><line x1="18.1" y1="5.9" x2="19.8" y2="4.2"></line></svg>
+      <svg id="iconMoon" width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M20.6 15.3A9 9 0 1 1 8.7 3.4a7 7 0 0 0 11.9 11.9z"></path></svg>
+    </button>
+  </div>
 </header>
 
 <p class="scroll-hint">Scroll to explore &nbsp;·&nbsp; <b>click a shoe</b> for details &nbsp;·&nbsp; <b>pinch</b> or <b>&#8984;/ctrl + scroll</b> to zoom out and see every brand</p>
@@ -815,6 +867,113 @@ LANE_ORDER.forEach((laneKey, laneIndex) => {
 }
 
 renderTimeline();
+
+// ---- Search: shoes, brands, players (curiosities/moment text included) ----
+(function(){
+  const toggle = document.getElementById('searchToggle');
+  const panel = document.getElementById('searchPanel');
+  const input = document.getElementById('searchInput');
+  const results = document.getElementById('searchResults');
+
+  const searchIndex = SHOES.map(s => ({
+    shoe: s,
+    text: [s.model, s.parent_brand, LANE_LABELS[s.lane] || s.lane, s.curiosities, s.moment_caption, s.designer]
+      .filter(Boolean).join(' ').toLowerCase()
+  }));
+
+  let hiIndex = -1;
+  let currentMatches = [];
+
+  function isOpen(){ return panel.classList.contains('open'); }
+
+  function openPanel(){
+    panel.classList.add('open');
+    toggle.classList.add('active');
+    input.focus();
+  }
+  function closePanel(){
+    panel.classList.remove('open');
+    toggle.classList.remove('active');
+    input.value = '';
+    results.innerHTML = '';
+    currentMatches = [];
+    hiIndex = -1;
+  }
+  toggle.addEventListener('click', () => { isOpen() ? closePanel() : openPanel(); });
+
+  document.addEventListener('keydown', e => {
+    if((e.ctrlKey || e.metaKey) && e.key === 'k'){ e.preventDefault(); isOpen() ? closePanel() : openPanel(); }
+    else if(e.key === 'Escape' && isOpen()){ closePanel(); }
+  });
+  document.addEventListener('click', e => {
+    if(isOpen() && !e.target.closest('.search-wrap')) closePanel();
+  });
+
+  function rank(item, q){
+    const model = item.shoe.model.toLowerCase();
+    if(model === q) return 0;
+    if(model.startsWith(q)) return 1;
+    if(model.includes(q)) return 2;
+    return 3;
+  }
+
+  function renderResults(){
+    results.innerHTML = '';
+    currentMatches.forEach((m, i) => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'search-result' + (i === hiIndex ? ' hi' : '');
+      item.innerHTML = '<b></b><span></span>';
+      item.querySelector('b').textContent = m.shoe.model;
+      item.querySelector('span').textContent = (LANE_LABELS[m.shoe.lane] || m.shoe.lane) + ' · ' + m.shoe.year;
+      item.addEventListener('click', () => jumpToShoe(m.shoe.model));
+      results.appendChild(item);
+    });
+    if(!currentMatches.length && input.value.trim()){
+      const empty = document.createElement('p');
+      empty.className = 'search-empty';
+      empty.textContent = 'No matches';
+      results.appendChild(empty);
+    }
+  }
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    hiIndex = -1;
+    if(!q){ currentMatches = []; renderResults(); return; }
+    currentMatches = searchIndex
+      .filter(i => i.text.includes(q))
+      .sort((a, b) => rank(a, q) - rank(b, q))
+      .slice(0, 8);
+    renderResults();
+  });
+
+  input.addEventListener('keydown', e => {
+    if(e.key === 'ArrowDown'){
+      e.preventDefault();
+      if(currentMatches.length){ hiIndex = (hiIndex + 1) % currentMatches.length; renderResults(); }
+    } else if(e.key === 'ArrowUp'){
+      e.preventDefault();
+      if(currentMatches.length){ hiIndex = (hiIndex - 1 + currentMatches.length) % currentMatches.length; renderResults(); }
+    } else if(e.key === 'Enter'){
+      e.preventDefault();
+      const pick = currentMatches[hiIndex] || currentMatches[0];
+      if(pick) jumpToShoe(pick.shoe.model);
+    }
+  });
+
+  function jumpToShoe(model){
+    const marker = document.querySelector('[data-model="' + CSS.escape(model) + '"]');
+    closePanel();
+    if(!marker) return;
+    const outer = document.getElementById('scrollOuter');
+    const markerRect = marker.getBoundingClientRect();
+    const outerRect = outer.getBoundingClientRect();
+    outer.scrollLeft += (markerRect.left - outerRect.left) - outer.clientWidth / 2 + markerRect.width / 2;
+    outer.scrollTop += (markerRect.top - outerRect.top) - outer.clientHeight / 2 + markerRect.height / 2;
+    marker.click();
+  }
+})();
 
 // ---- Size the timeline pane to fill the viewport ----
 // Keeps the horizontal scrollbar pinned to the bottom of the screen at all times,
